@@ -1,41 +1,39 @@
+import json
 from django.shortcuts import render
 from django.http import JsonResponse
 import razorpay 
 from django.conf import settings
 
-# Create your views here.
-
 def pay_page(request):
-
-    return render(request,"paymentform.html")
+    return render(request, "paymentform.html")
 
 def create_order(request):
-
     if request.method == 'POST':
-        print(request.POST)
+        data = json.loads(request.body)
 
-        amount = int(request.POST.get('amount')) * 100
-        print(amount)
+        print(data)
+        amount = int(data.get('amount')) * 100
+        name = data.get('name')
         currency = 'INR'
 
-        client = razorpay.Client(auth=('rzp_test_VDpNNlne9cRS7A','WHIX59szAAGpZO34jtw2P7Dh'))
+        # Initialize Razorpay client
+        client = razorpay.Client(auth=(settings.RAZORPAY_API_KEY, settings.RAZORPAY_API_SECRET))
 
-        Data = {
-            'amount' : amount ,
-            'currency' : currency ,
-            'receipt' : "TutionFeesPayment",
-            'notes' : {
-                "name" : "suyash",
-                "payment_for" : "Tution"
+        # Create order data
+        data = {
+            'amount': amount,
+            'currency': currency,
+            'receipt': "TutionFeesPayment",
+            'notes': {
+                "name": name,
+                "payment_for": "Tution"
             }
         }
 
-        response = client.order.create(data=Data)
-
+        # Create order with Razorpay
+        response = client.order.create(data=data)
         order_id = response['id']
 
-        print(order_id)
-
-        return JsonResponse({'order_id':order_id})
-    else :
-        return JsonResponse({'error':'Invalid request'})    
+        return JsonResponse({'order_id': order_id, 'amount': amount , 'key' : settings.RAZORPAY_API_KEY})
+    else:
+        return JsonResponse({'error': 'Invalid request'})
